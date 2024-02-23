@@ -1,0 +1,293 @@
+
+1. How many active users are there?
+modelName.aggregate(
+    [
+        {
+            $match:{
+                isActive:true
+            }
+        },
+        {
+            $count: 'activeUsers'
+        }
+    ]
+)
+
+2. What is the average age??
+modelName.aggregate(
+    [
+        {
+            $group: {
+                 _id: null, //will group all the document as one
+                averageAge:{
+                    $avg:"$age"
+                }
+            }
+        }
+    ]
+)
+
+3. Find sum of age??
+[
+  {
+    $group: {
+      _id: null,
+      sumOfAge:{
+        $sum:"$age"
+      }
+    }
+  }
+]
+
+4. List top 5 most common favourite fruit among users??
+[
+  {
+    $group: {
+      _id: "$favoriteFruit",
+      count:{$sum:1}
+    }
+  },
+  {
+    $sort:{
+      count:-1
+    }
+  },
+  {
+    $limit: 5
+  }
+  //{
+    //$match: {
+     // count:{$gt:330}
+    //}
+  //}
+]
+
+5. List top 5 most common favourite fruit among users??
+[
+    {
+        $group:{
+            _id: "$gender",
+            count:{
+                $sum: 1
+            }
+        }
+    }
+]
+
+6. Which country has the highest number of registered users??
+[
+  {
+    $group:{
+      _id: "$company.location.country",
+      users:{
+        $sum: 1
+      }
+    }
+  },
+  {
+    $sort:{
+      users: -1
+    }
+  },
+  {
+    $limit:1
+  }
+]
+
+7. List all unique eye colours present in the collection??
+[
+    {
+        $group:{
+            _id: "$eyeColor"
+        }
+    }
+]
+
+8. find average number of tags for per user
+[
+  {
+    $unwind: {
+      path: "$tags"
+      
+    }
+  },
+  {
+    $group: {
+      _id: "$_id",
+      numberOfTags:{
+        $sum:1
+      }
+    }
+  },
+  {
+    $group: {
+      _id: null,
+      averageNumberOfTags: {
+        $avg: "$numberOfTags"
+      }
+    }
+  }
+]
+
+another way
+[
+  {
+    $addFields: {
+      numberOfTags: {
+        $size:{
+          $ifNull:["$tags",[]]
+				}
+    	}
+  	}
+  },
+  {
+    $group: {
+      _id: null,
+      numberOfAverageTags: {
+        $avg: "$numberOfTags"
+      }
+    }
+  }
+]
+
+9. how many users are there with tag 'enim'
+[
+  {
+    $match: {
+      tags:"enim"
+    }
+  },
+  {
+    $count: "users"
+  }
+  
+]
+
+10. I want name and age of user who are inactive and tags have 'velit'
+[
+  {
+    $match: {
+      tags:"velit",
+      isActive:false
+    }
+  },
+  {
+    $project:{
+      _id:1,
+      name:1,
+      age:1      
+    }
+  }  
+]
+
+11. who has registered most recently
+[
+  {
+    $sort: {
+      registered: -1
+    }
+  },
+  {
+    $limit: 5
+  },
+  {
+    $project: {
+      name:1,
+      registered:1,
+      age:1
+    }
+  }
+]
+
+12. categorise users based on favourite fruit
+[
+  {
+    $group:{
+      _id:"$favoriteFruit",
+      count:{$sum:1},
+      users:{$push:"$name"}
+    }
+  }
+]
+push - is used to push field in result
+
+13. find all the users who has 'ad' tag in 2nd position in tags array
+[
+  {
+    $match: {
+      "tags.1":"ad"
+    }
+  },
+  {
+    $count: 'secondTagAd'
+  }
+]
+
+14. find all the document who has tag 'enim' and 'id' both
+[
+  {
+    $match:{
+      $and:[
+        {"tags":"enim"},
+        {"tags":"id"}
+      ]
+    }
+  }
+]
+
+another way
+[
+  {
+    $match:{
+      tags:{
+        $all:["enim","id"]
+      }
+    }
+  },
+  {
+    $count: 'users'
+  }
+]
+
+15. list all the companies located in USA with their user count
+[
+  {
+    $match:{
+      "company.location.country":"USA"
+    }
+  },
+  {
+    $group: {
+      _id: "$company.title",
+      fieldN: {
+        $sum: 1
+      }
+    }
+  }
+]
+
+16. get author details associate with books
+[
+  {
+    $lookup: {
+      from: "authors",
+      localField: "author_id",
+      foreignField: "_id",
+      as: "authorDetails"
+    }
+  },
+  {
+    $unwind: {
+      path: "$authorDetails"
+    }
+  },
+  {
+    $project: {
+      title:1,
+      genre:1,
+      author:{
+        authorName:"$authorDetails.name"
+      }
+    }
+  }
+]
